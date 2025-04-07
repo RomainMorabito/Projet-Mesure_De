@@ -9,22 +9,34 @@ int main(int argc, char *argv[]) {
     std::locale::global(std::locale(""));
 
     ModbusCommunicator modbus("192.168.22.1", 502);
-    DatabaseConnector dbConnector("192.168.17.2", "Mesure_De", "admin", "admin", 3306);
+    DatabaseConnector dbConnector("192.168.16.25", "Mesure_De", "admin", "admin", 3306);
 
-    float previousEnergyValue1 = 0.0f;
-    float previousEnergyValue2 = 0.0f;
-    float previousEnergyValue3 = 0.0f;
+    float previousEnergyValueWh1 = 0.0f;
+    float previousEnergyValueWh2 = 0.0f;
+    float previousEnergyValueWh3 = 0.0f;
+    float previousEnergyValueKWh1 = 0.0f;
+    float previousEnergyValueKWh2 = 0.0f;
+    float previousEnergyValueKWh3 = 0.0f;
     bool firstReading = true;
 
     while (true) {
-        unsigned char modbusRequestEnergy1[] = {
+        unsigned char modbusRequestEnergyWh1[] = {
             0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0x4D, 0x83, 0x00, 0x01
         };
-        unsigned char modbusRequestEnergy2[] = {
+        unsigned char modbusRequestEnergyWh2[] = {
             0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0x55, 0x83, 0x00, 0x01
         };
-        unsigned char modbusRequestEnergy3[] = {
+        unsigned char modbusRequestEnergyWh3[] = {
             0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0x5D, 0x83, 0x00, 0x01
+        };
+        unsigned char modbusRequestEnergyKWh1[] = {
+            0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0x4D, 0x81, 0x00, 0x01
+        };
+        unsigned char modbusRequestEnergyKWh2[] = {
+            0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0x55, 0x81, 0x00, 0x01
+        };
+        unsigned char modbusRequestEnergyKWh3[] = {
+            0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0x5D, 0x81, 0x00, 0x01
         };
         unsigned char modbusRequestDay[] = {
             0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0xE1, 0x00, 0x00, 0x01
@@ -45,9 +57,12 @@ int main(int argc, char *argv[]) {
             0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0xE1, 0x05, 0x00, 0x01
         };
 
-        uint16_t energyValue1 = 0xFFFF;
-        uint16_t energyValue2 = 0xFFFF;
-        uint16_t energyValue3 = 0xFFFF;
+        uint16_t energyValueWh1 = 0xFFFF;
+        uint16_t energyValueWh2 = 0xFFFF;
+        uint16_t energyValueWh3 = 0xFFFF;
+        uint16_t energyValueKWh1 = 0xFFFF;
+        uint16_t energyValueKWh2 = 0xFFFF;
+        uint16_t energyValueKWh3 = 0xFFFF;
         uint16_t day = 0xFFFF;
         uint16_t month = 0xFFFF;
         uint16_t year = 0xFFFF;
@@ -61,9 +76,12 @@ int main(int argc, char *argv[]) {
                 modbus.connectToServer();
             }
 
-            energyValue1 = modbus.readModbusRegister(modbusRequestEnergy1, sizeof(modbusRequestEnergy1));
-            energyValue2 = modbus.readModbusRegister(modbusRequestEnergy2, sizeof(modbusRequestEnergy2));
-            energyValue3 = modbus.readModbusRegister(modbusRequestEnergy3, sizeof(modbusRequestEnergy3));
+            energyValueWh1 = modbus.readModbusRegister(modbusRequestEnergyWh1, sizeof(modbusRequestEnergyWh1));
+            energyValueWh2 = modbus.readModbusRegister(modbusRequestEnergyWh2, sizeof(modbusRequestEnergyWh2));
+            energyValueWh3 = modbus.readModbusRegister(modbusRequestEnergyWh3, sizeof(modbusRequestEnergyWh3));
+            energyValueKWh1 = modbus.readModbusRegister(modbusRequestEnergyKWh1, sizeof(modbusRequestEnergyKWh1));
+            energyValueKWh2 = modbus.readModbusRegister(modbusRequestEnergyKWh2, sizeof(modbusRequestEnergyKWh2));
+            energyValueKWh3 = modbus.readModbusRegister(modbusRequestEnergyKWh3, sizeof(modbusRequestEnergyKWh3));
             day = modbus.readModbusRegister(modbusRequestDay, sizeof(modbusRequestDay));
             month = modbus.readModbusRegister(modbusRequestMonth, sizeof(modbusRequestMonth));
             year = modbus.readModbusRegister(modbusRequestYear, sizeof(modbusRequestYear));
@@ -71,7 +89,8 @@ int main(int argc, char *argv[]) {
             minute = modbus.readModbusRegister(modbusRequestMinute, sizeof(modbusRequestMinute));
             second = modbus.readModbusRegister(modbusRequestSecond, sizeof(modbusRequestSecond));
 
-            if (energyValue1 != 0xFFFF && energyValue2 != 0xFFFF && energyValue3 != 0xFFFF &&
+            if (energyValueWh1 != 0xFFFF && energyValueWh2 != 0xFFFF && energyValueWh3 != 0xFFFF &&
+                energyValueKWh1 != 0xFFFF && energyValueKWh2 != 0xFFFF && energyValueKWh3 != 0xFFFF &&
                 day != 0xFFFF && month != 0xFFFF && year != 0xFFFF &&
                 hour != 0xFFFF && minute != 0xFFFF && second != 0xFFFF) {
                 break;
@@ -81,21 +100,29 @@ int main(int argc, char *argv[]) {
             QThread::sleep(2); // Wait before retrying
         }
 
-        if (energyValue1 == 0xFFFF || energyValue2 == 0xFFFF || energyValue3 == 0xFFFF ||
+        if (energyValueWh1 == 0xFFFF || energyValueWh2 == 0xFFFF || energyValueWh3 == 0xFFFF ||
+            energyValueKWh1 == 0xFFFF || energyValueKWh2 == 0xFFFF || energyValueKWh3 == 0xFFFF ||
             day == 0xFFFF || month == 0xFFFF || year == 0xFFFF ||
             hour == 0xFFFF || minute == 0xFFFF || second == 0xFFFF) {
             qDebug() << "Erreur lors de la lecture des registres après plusieurs tentatives";
         } else {
-            float currentEnergyValueWh1 = static_cast<float>(energyValue1) / 10.0f;
-            float currentEnergyValueWh2 = static_cast<float>(energyValue2) / 10.0f;
-            float currentEnergyValueWh3 = static_cast<float>(energyValue3) / 10.0f;
+            float currentEnergyValueWh1 = static_cast<float>(energyValueWh1) / 10.0f;
+            float currentEnergyValueWh2 = static_cast<float>(energyValueWh2) / 10.0f;
+            float currentEnergyValueWh3 = static_cast<float>(energyValueWh3) / 10.0f;
+            float currentEnergyValueKWh1 = static_cast<float>(energyValueKWh1);
+            float currentEnergyValueKWh2 = static_cast<float>(energyValueKWh2);
+            float currentEnergyValueKWh3 = static_cast<float>(energyValueKWh3);
 
-            float consumptionWh1 = currentEnergyValueWh1 - previousEnergyValue1;
-            float consumptionWh2 = currentEnergyValueWh2 - previousEnergyValue2;
-            float consumptionWh3 = currentEnergyValueWh3 - previousEnergyValue3;
+            float consumptionWh1 = currentEnergyValueWh1 - previousEnergyValueWh1;
+            float consumptionWh2 = currentEnergyValueWh2 - previousEnergyValueWh2;
+            float consumptionWh3 = currentEnergyValueWh3 - previousEnergyValueWh3;
+
+            float consumptionKWh1 = currentEnergyValueKWh1 - previousEnergyValueKWh1;
+            float consumptionKWh2 = currentEnergyValueKWh2 - previousEnergyValueKWh2;
+            float consumptionKWh3 = currentEnergyValueKWh3 - previousEnergyValueKWh3;
 
             float totalConsumptionWh = consumptionWh1 + consumptionWh2 + consumptionWh3;
-            float totalConsumptionKWh = totalConsumptionWh / 1000.0f;
+            float totalConsumptionKWh = (totalConsumptionWh / 1000.0f) + consumptionKWh1 + consumptionKWh2 + consumptionKWh3;
 
             QString dateTimeString = QString("%1-%2-20%3 %4:%5:%6")
                                          .arg(day, 2, 10, QChar('0'))
@@ -107,18 +134,21 @@ int main(int argc, char *argv[]) {
 
             if (!firstReading) {
                 qDebug() << dateTimeString << " - Consommation totale (différence): " << totalConsumptionKWh << "kWh";
-                qDebug() << "Détails: Energie 1: " << consumptionWh1 / 1000.0f << "kWh, Energie 2: " << consumptionWh2 / 1000.0f << "kWh, Energie 3: " << consumptionWh3 / 1000.0f << "kWh";
+                qDebug() << "Détails: Energie 1: " << (consumptionWh1 / 1000.0f + consumptionKWh1) << "kWh, Energie 2: " << (consumptionWh2 / 1000.0f + consumptionKWh2) << "kWh, Energie 3: " << (consumptionWh3 / 1000.0f + consumptionKWh3) << "kWh";
                 dbConnector.insertData(totalConsumptionKWh, dateTimeString);
             } else {
                 firstReading = false;
             }
 
-            previousEnergyValue1 = currentEnergyValueWh1;
-            previousEnergyValue2 = currentEnergyValueWh2;
-            previousEnergyValue3 = currentEnergyValueWh3;
+            previousEnergyValueWh1 = currentEnergyValueWh1;
+            previousEnergyValueWh2 = currentEnergyValueWh2;
+            previousEnergyValueWh3 = currentEnergyValueWh3;
+            previousEnergyValueKWh1 = currentEnergyValueKWh1;
+            previousEnergyValueKWh2 = currentEnergyValueKWh2;
+            previousEnergyValueKWh3 = currentEnergyValueKWh3;
         }
 
-        QThread::sleep(600); // Delay 60 minutes
+        QThread::sleep(10); // Delay 60 minutes
     }
 
     return app.exec();

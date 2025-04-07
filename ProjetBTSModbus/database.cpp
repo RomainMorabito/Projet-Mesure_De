@@ -12,7 +12,7 @@ DatabaseConnector::~DatabaseConnector() {
     db.close();
 }
 
-void DatabaseConnector::insertData(float consumptionKWh, const QString& dateTimeString) {
+void DatabaseConnector::insertData(float totalConsumptionKWh, const QString& dateTimeString) {
     if (!db.isOpen()) {
         qDebug() << "Erreur de connexion à la base de données :" << db.lastError().text();
         return;
@@ -26,7 +26,7 @@ void DatabaseConnector::insertData(float consumptionKWh, const QString& dateTime
         return;
     }
 
-    query.bindValue(":consumption_kwh", consumptionKWh);
+    query.bindValue(":consumption_kwh", totalConsumptionKWh);
     query.bindValue(":timestamp", formattedDateTimeString);
 
     if (!query.exec()) {
