@@ -1,5 +1,4 @@
 #include "modbus.h"
-#include <QDebug>
 
 ModbusCommunicator::ModbusCommunicator(const QString& serverIp, int port)
     : serverIp(serverIp), port(port), sock(INVALID_SOCKET) {
@@ -31,14 +30,13 @@ uint16_t ModbusCommunicator::readModbusRegister(unsigned char* request, int requ
     }
 }
 
-void ModbusCommunicator::initializeWinsock() {
-    WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        qDebug() << "Erreur d'initialisation de Winsock";
-    }
+bool ModbusCommunicator::isConnected() const {
+    return sock != INVALID_SOCKET;
 }
 
 void ModbusCommunicator::connectToServer() {
+    disconnectFromServer();
+
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == INVALID_SOCKET) {
         qDebug() << "Erreur de création du socket";
@@ -52,8 +50,14 @@ void ModbusCommunicator::connectToServer() {
 
     if (connect(sock, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
         qDebug() << "Erreur de connexion";
-        closesocket(sock);
-        sock = INVALID_SOCKET;
+        disconnectFromServer();
+    }
+}
+
+void ModbusCommunicator::initializeWinsock() {
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        qDebug() << "Erreur d'initialisation de Winsock";
     }
 }
 
