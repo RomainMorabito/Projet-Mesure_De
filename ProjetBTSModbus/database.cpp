@@ -12,7 +12,7 @@ DatabaseConnector::~DatabaseConnector() {
     db.close();
 }
 
-void DatabaseConnector::insertData(float totalConsumptionKWh, const QString& dateTimeString) {
+void DatabaseConnector::insertData(float totalConsumptionKWh, const QString& dateTimeString, int dispositifId) {
     if (!db.isOpen()) {
         qDebug() << "Erreur de connexion à la base de données :" << db.lastError().text();
         return;
@@ -21,19 +21,42 @@ void DatabaseConnector::insertData(float totalConsumptionKWh, const QString& dat
     QString formattedDateTimeString = formatDateTime(dateTimeString);
 
     QSqlQuery query(db);
-    if (!query.prepare("INSERT INTO Donnee_Mesurer (Valeur_Mesure, Timestamp) VALUES (:consumption_kwh, :timestamp)")) {
+    if (!query.prepare("INSERT INTO Donnee_Mesurer (Valeur_Mesure, Timestamp, ID_Dispositif_FK) VALUES (:consumption_kwh, :timestamp, :dispositif_id)")) {
         qDebug() << "Erreur lors de la préparation de la requête :" << query.lastError().text();
         return;
     }
 
     query.bindValue(":consumption_kwh", totalConsumptionKWh);
     query.bindValue(":timestamp", formattedDateTimeString);
+    query.bindValue(":dispositif_id", dispositifId);
 
     if (!query.exec()) {
         qDebug() << "Erreur lors de l'insertion des données dans la base de données :" << query.lastError().text();
     } else {
         qDebug() << "Données insérées avec succès dans la base de données";
     }
+}
+
+QString DatabaseConnector::getGatewayIpAddress(int dispositifId) {
+    if (!db.isOpen()) {
+        qDebug() << "Erreur de connexion à la base de données :" << db.lastError().text();
+        return QString();
+    }
+
+    QString queryStr = QString("SELECT Adresse_IP_Passerelle FROM Dispositif_Passerelle WHERE ID_Dispositif_PK = %1").arg(dispositifId);
+    QSqlQuery query(db);
+
+    if (query.exec(queryStr)) {
+        if (query.next()) {
+            return query.value(0).toString();
+        } else {
+            qDebug() << "Aucune adresse IP trouvée pour l'ID_Dispositif_PK :" << dispositifId;
+        }
+    } else {
+        qDebug() << "Erreur lors de l'exécution de la requête :" << query.lastError().text();
+    }
+
+    return QString();
 }
 
 void DatabaseConnector::connectToDatabase() {
@@ -62,5 +85,5 @@ QString DatabaseConnector::formatDateTime(const QString& dateTimeString) {
         .arg(dateTimeString.mid(0, 2))  // Jour
         .arg(dateTimeString.mid(11, 2)) // Heure
         .arg(dateTimeString.mid(14, 2)) // Minute
-        .arg(dateTimeString.mid(17, 2));// Seconde
+        .arg(dateTimeString.mid(17, 2)); // Seconde
 }

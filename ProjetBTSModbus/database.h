@@ -8,7 +8,8 @@ class DatabaseConnector {
 public:
     DatabaseConnector(const QString& hostName, const QString& dbName, const QString& userName, const QString& password, int port);
     ~DatabaseConnector();
-    void insertData(float totalConsumptionKWh, const QString& dateTimeString);
+    void insertData(float totalConsumptionKWh, const QString& dateTimeString, int dispositifId);
+    QString getGatewayIpAddress(int dispositifId);
 
 private:
     QString hostName;

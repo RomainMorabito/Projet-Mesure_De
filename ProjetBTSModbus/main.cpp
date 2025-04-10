@@ -8,8 +8,20 @@ int main(int argc, char *argv[]) {
 
     std::locale::global(std::locale(""));
 
-    ModbusCommunicator modbus("192.168.22.1", 502);
-    DatabaseConnector dbConnector("192.168.16.25", "Mesure_De", "admin", "admin", 3306);
+
+    DatabaseConnector dbConnector("192.168.16.21", "Mesure_De", "admin", "admin", 3306);
+
+    int dispositifId = 1;
+
+    QString ipAddress = dbConnector.getGatewayIpAddress(dispositifId);
+
+    if (!ipAddress.isEmpty()) {
+        qDebug() << "Adresse IP de la passerelle:" << ipAddress;
+
+        // Initialiser le communicateur Modbus avec l'adresse IP récupérée
+        ModbusCommunicator modbus(ipAddress, 502);
+
+
 
     float previousEnergyValueWh1 = 0.0f;
     float previousEnergyValueWh2 = 0.0f;
@@ -30,13 +42,13 @@ int main(int argc, char *argv[]) {
             0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0x5D, 0x83, 0x00, 0x01
         };
         unsigned char modbusRequestEnergyKWh1[] = {
-            0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0x4D, 0x81, 0x00, 0x01
+            0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0x4D, 0x82, 0x00, 0x01
         };
         unsigned char modbusRequestEnergyKWh2[] = {
-            0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0x55, 0x81, 0x00, 0x01
+            0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0x55, 0x82, 0x00, 0x01
         };
         unsigned char modbusRequestEnergyKWh3[] = {
-            0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0x5D, 0x81, 0x00, 0x01
+            0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0x5D, 0x82, 0x00, 0x01
         };
         unsigned char modbusRequestDay[] = {
             0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0xE1, 0x00, 0x00, 0x01
@@ -135,7 +147,16 @@ int main(int argc, char *argv[]) {
             if (!firstReading) {
                 qDebug() << dateTimeString << " - Consommation totale (différence): " << totalConsumptionKWh << "kWh";
                 qDebug() << "Détails: Energie 1: " << (consumptionWh1 / 1000.0f + consumptionKWh1) << "kWh, Energie 2: " << (consumptionWh2 / 1000.0f + consumptionKWh2) << "kWh, Energie 3: " << (consumptionWh3 / 1000.0f + consumptionKWh3) << "kWh";
-                dbConnector.insertData(totalConsumptionKWh, dateTimeString);
+                qDebug() << "Energie totale 1(KWh):"<<currentEnergyValueKWh1;
+                qDebug() << "Energie precedente totale 1(Wh):"<<previousEnergyValueWh1;
+                qDebug() << "Energie totale 1(Wh):"<<currentEnergyValueWh1;
+                qDebug() << "Energie totale 2(KWh):"<<currentEnergyValueKWh2;
+                qDebug() << "Energie precedente totale 2(Wh):"<<previousEnergyValueWh2;
+                qDebug() << "Energie totale 2(Wh):"<<currentEnergyValueWh2;
+                qDebug() << "Energie totale 3(KWh):"<<currentEnergyValueKWh3;
+                qDebug() << "Energie precedente totale 3(Wh):"<<previousEnergyValueWh3;
+                qDebug() << "Energie totale 3(Wh):"<<currentEnergyValueWh3;
+                dbConnector.insertData(totalConsumptionKWh, dateTimeString, dispositifId);
             } else {
                 firstReading = false;
             }
@@ -148,8 +169,9 @@ int main(int argc, char *argv[]) {
             previousEnergyValueKWh3 = currentEnergyValueKWh3;
         }
 
-        QThread::sleep(10); // Delay 60 minutes
+        QThread::sleep(600); // délai en secondes
     }
 
     return app.exec();
+}
 }
