@@ -2,13 +2,16 @@
 #define MODBUS_H
 
 #include <QString>
-#include <winsock2.h>
-#include <ws2tcpip.h>
+#include <sys/socket.h> // Pour les sockets
+#include <netinet/in.h> // Pour sockaddr_in
+#include <arpa/inet.h>  // Pour inet_pton et htons
 #include <QDebug>
+#include <cstdint> // Pour uint16_t
 
 class ModbusCommunicator {
 public:
     ModbusCommunicator(const QString& serverIp, int port);
+    int readRawModbusResponse(unsigned char* request, int requestSize, unsigned char* responseBuffer, int responseBufferSize);
     ~ModbusCommunicator();
 
     uint16_t readModbusRegister(unsigned char* request, int requestSize);
@@ -16,12 +19,11 @@ public:
     void connectToServer();
 
 private:
-    void initializeWinsock();
     void disconnectFromServer();
 
     QString serverIp;
     int port;
-    SOCKET sock;
+    int sock; // Utilisation d'un descripteur de fichier entier pour le socket
 };
 
 #endif // MODBUS_H
