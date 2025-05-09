@@ -10,6 +10,13 @@ int main(int argc, char *argv[]) {
 
     // Connexion à la base de données
     DatabaseConnector dbConnector("192.168.17.10", "Mesure_De", "admin", "admin", 3306);
+    float previousEnergyValueWh1 = 0.0f;
+    float previousEnergyValueWh2 = 0.0f;
+    float previousEnergyValueWh3 = 0.0f;
+    float previousEnergyValueKWh1 = 0.0f;
+    float previousEnergyValueKWh2 = 0.0f;
+    float previousEnergyValueKWh3 = 0.0f;
+    bool firstReading = true;
 
     int dispositifId = 1;
 
@@ -18,19 +25,10 @@ int main(int argc, char *argv[]) {
 
     if (!ipAddress.isEmpty()) {
         qDebug() << "Adresse IP de la passerelle:" << ipAddress;
-
+        while (true) {
         // Initialisation du communicateur Modbus avec l'adresse IP récupérée
         ModbusCommunicator modbus(ipAddress, 502);
 
-        float previousEnergyValueWh1 = 0.0f;
-        float previousEnergyValueWh2 = 0.0f;
-        float previousEnergyValueWh3 = 0.0f;
-        float previousEnergyValueKWh1 = 0.0f;
-        float previousEnergyValueKWh2 = 0.0f;
-        float previousEnergyValueKWh3 = 0.0f;
-        bool firstReading = true;
-
-        while (true) {
             unsigned char modbusRequestEnergyWh1[] = {
                 0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0x4D, 0x83, 0x00, 0x01
             };
@@ -170,8 +168,8 @@ int main(int argc, char *argv[]) {
                 previousEnergyValueKWh2 = currentEnergyValueKWh2;
                 previousEnergyValueKWh3 = currentEnergyValueKWh3;
             }
-
-            QThread::sleep(10); // Délai de 10 secondes
+            modbus.disconnectFromServer();
+            QThread::sleep(300); // Délai de 30 minutes
         }
 
         return app.exec();
