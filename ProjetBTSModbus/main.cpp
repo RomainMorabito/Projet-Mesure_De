@@ -9,7 +9,7 @@ int main(int argc, char *argv[]) {
     std::locale::global(std::locale(""));
 
     // Connexion à la base de données
-    DatabaseConnector dbConnector("192.168.17.10", "Mesure_De", "admin", "admin", 3306);
+    DatabaseConnector dbConnector("192.168.17.2", "Mesure_De", "admin", "admin", 3306);
     float previousEnergyValueWh1 = 0.0f;
     float previousEnergyValueWh2 = 0.0f;
     float previousEnergyValueWh3 = 0.0f;
@@ -47,23 +47,8 @@ int main(int argc, char *argv[]) {
             unsigned char modbusRequestEnergyKWh3[] = {
                 0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0x5D, 0x82, 0x00, 0x01
             };
-            unsigned char modbusRequestDay[] = {
-                0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0xE1, 0x00, 0x00, 0x01
-            };
-            unsigned char modbusRequestMonth[] = {
-                0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0xE1, 0x01, 0x00, 0x01
-            };
-            unsigned char modbusRequestYear[] = {
-                0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0xE1, 0x02, 0x00, 0x01
-            };
-            unsigned char modbusRequestHour[] = {
-                0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0xE1, 0x03, 0x00, 0x01
-            };
-            unsigned char modbusRequestMinute[] = {
-                0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0xE1, 0x04, 0x00, 0x01
-            };
-            unsigned char modbusRequestSecond[] = {
-                0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0xE1, 0x05, 0x00, 0x01
+            unsigned char modbusRequeteDate[] = {
+                0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0xE1, 0x00, 0x00, 0x06
             };
 
             uint16_t energyValueWh1 = 0xFFFF;
@@ -72,18 +57,6 @@ int main(int argc, char *argv[]) {
             uint16_t energyValueKWh1 = 0xFFFF;
             uint16_t energyValueKWh2 = 0xFFFF;
             uint16_t energyValueKWh3 = 0xFFFF;
-            uint16_t day = 0xFFFF;
-            uint16_t month = 0xFFFF;
-            uint16_t year = 0xFFFF;
-            uint16_t hour = 0xFFFF;
-            uint16_t minute = 0xFFFF;
-            uint16_t second = 0xFFFF;
-
-            // Mécanisme de réessai
-            for (int attempt = 0; attempt < 3; ++attempt) {
-                if (!modbus.isConnected()) {
-                    modbus.connectToServer();
-                }
 
                 energyValueWh1 = modbus.readModbusRegister(modbusRequestEnergyWh1, sizeof(modbusRequestEnergyWh1));
                 energyValueWh2 = modbus.readModbusRegister(modbusRequestEnergyWh2, sizeof(modbusRequestEnergyWh2));
@@ -91,23 +64,17 @@ int main(int argc, char *argv[]) {
                 energyValueKWh1 = modbus.readModbusRegister(modbusRequestEnergyKWh1, sizeof(modbusRequestEnergyKWh1));
                 energyValueKWh2 = modbus.readModbusRegister(modbusRequestEnergyKWh2, sizeof(modbusRequestEnergyKWh2));
                 energyValueKWh3 = modbus.readModbusRegister(modbusRequestEnergyKWh3, sizeof(modbusRequestEnergyKWh3));
-                day = modbus.readModbusRegister(modbusRequestDay, sizeof(modbusRequestDay));
-                month = modbus.readModbusRegister(modbusRequestMonth, sizeof(modbusRequestMonth));
-                year = modbus.readModbusRegister(modbusRequestYear, sizeof(modbusRequestYear));
-                hour = modbus.readModbusRegister(modbusRequestHour, sizeof(modbusRequestHour));
-                minute = modbus.readModbusRegister(modbusRequestMinute, sizeof(modbusRequestMinute));
-                second = modbus.readModbusRegister(modbusRequestSecond, sizeof(modbusRequestSecond));
 
-                if (energyValueWh1 != 0xFFFF && energyValueWh2 != 0xFFFF && energyValueWh3 != 0xFFFF &&
-                    energyValueKWh1 != 0xFFFF && energyValueKWh2 != 0xFFFF && energyValueKWh3 != 0xFFFF &&
-                    day != 0xFFFF && month != 0xFFFF && year != 0xFFFF &&
-                    hour != 0xFFFF && minute != 0xFFFF && second != 0xFFFF) {
-                    break;
-                }
+                uint16_t dateRegistre[6];
+                int NombreRegistreLusDate = modbus.readModbusRegisters(modbusRequeteDate, sizeof(modbusRequeteDate), dateRegistre, 6);
 
-                qDebug() << "Erreur lors de la lecture des registres. Réessai...";
-                QThread::sleep(2); // Attendre avant de réessayer
-            }
+                if (NombreRegistreLusDate == 6) {
+                    uint16_t day = dateRegistre[0];
+                    uint16_t month = dateRegistre[1];
+                    uint16_t year = dateRegistre[2];
+                    uint16_t hour = dateRegistre[3];
+                    uint16_t minute = dateRegistre[4];
+                    uint16_t second = dateRegistre[5];
 
             if (energyValueWh1 == 0xFFFF || energyValueWh2 == 0xFFFF || energyValueWh3 == 0xFFFF ||
                 energyValueKWh1 == 0xFFFF || energyValueKWh2 == 0xFFFF || energyValueKWh3 == 0xFFFF ||
@@ -168,13 +135,12 @@ int main(int argc, char *argv[]) {
                 previousEnergyValueKWh2 = currentEnergyValueKWh2;
                 previousEnergyValueKWh3 = currentEnergyValueKWh3;
             }
+                            }
             modbus.disconnectFromServer();
-            QThread::sleep(300); // Délai de 30 minutes
+            QThread::sleep(1800); // Délai de 30 minutes
         }
 
         return app.exec();
-    } else {
-        qDebug() << "Erreur: Impossible de récupérer l'adresse IP de la passerelle.";
-        return 1;
-    }
+
+}
 }

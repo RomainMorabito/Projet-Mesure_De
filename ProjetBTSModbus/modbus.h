@@ -15,11 +15,12 @@ public:
     ~ModbusCommunicator();
 
     uint16_t readModbusRegister(unsigned char* request, int requestSize);
+    uint16_t readModbusRegisters(unsigned char* request, int requestSize, uint16_t* responseTrame, int responseTrameSize);
     bool isConnected() const;
     void connectToServer();
-
+    void disconnectFromServer(); //mettre en prive
 private:
-    void disconnectFromServer();
+
 
     QString serverIp;
     int port;
