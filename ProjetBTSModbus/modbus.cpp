@@ -9,104 +9,108 @@
 #include <unistd.h>
 #include <errno.h>
 
-#define INVALID_SOCKET -1
-#define SOCKET_ERROR -1
+#define SOCKET_INVALIDE -1
+#define ERREUR_SOCKET -1
 
-ModbusCommunicator::ModbusCommunicator(const QString& serverIp, int port)
-    : serverIp(serverIp), port(port), sock(INVALID_SOCKET) {
-    connectToServer();
+CommunicateurModbus::CommunicateurModbus(const QString& ipServeur, int port)
+    : ipServeur(ipServeur), port(port), socket(SOCKET_INVALIDE) {
+    connecterAuServeur();
 }
 
-ModbusCommunicator::~ModbusCommunicator() {
-    disconnectFromServer();
+CommunicateurModbus::~CommunicateurModbus() {
+    deconnecterDuServeur();
 }
 
-uint16_t ModbusCommunicator::readModbusRegister(unsigned char* request, int requestSize) {
-    if (send(sock, (char*)request, requestSize, 0) == SOCKET_ERROR) {
-        qDebug() << "Erreur d'envoi de la requ�te Modbus:" << errno;
+uint16_t CommunicateurModbus::lireRegistreModbus(unsigned char* requete, int tailleRequete) {
+    if (send(socket, (char*)requete, tailleRequete, 0) == ERREUR_SOCKET) {
+        qDebug() << "Erreur d'envoi de la requête Modbus:" << errno;
         return 0xFFFF; // Valeur d'erreur
     }
-    unsigned char response[256];
-    int bytesRead = recv(sock, (char*)response, sizeof(response), 0);
-    if (bytesRead == SOCKET_ERROR) {
-        qDebug() << "Erreur de r�ception de la r�ponse Modbus:" << errno;
+    unsigned char reponse[256];
+    int octetsLus = recv(socket, (char*)reponse, sizeof(reponse), 0);
+    if (octetsLus == ERREUR_SOCKET) {
+        qDebug() << "Erreur de réception de la réponse Modbus:" << errno;
         return 0xFFFF; // Valeur d'erreur
     }
-    if (bytesRead >= 9 && !(response[7] & 0x80)) {
-        return (response[9] << 8) | response[10];
+    if (octetsLus >= 9 && !(reponse[7] & 0x80)) {
+        return (reponse[9] << 8) | reponse[10];
     } else {
-        qDebug() << "Erreur Modbus ou r�ponse invalide";
+        qDebug() << "Erreur Modbus ou réponse invalide";
         return 0xFFFF; // Valeur d'erreur
     }
 }
 
-uint16_t ModbusCommunicator::readModbusRegisters(unsigned char* request, int requestSize, uint16_t* responseTrame, int responseTrameSize) {
-    if (send(sock, (char*)request, requestSize, 0) == SOCKET_ERROR) {
-        qDebug() << "Erreur d'envoi de la requ�te Modbus";
+uint16_t CommunicateurModbus::lireRegistresModbus(unsigned char* requete, int tailleRequete, uint16_t* trameReponse, int tailleTrameReponse) {
+    if (send(socket, (char*)requete, tailleRequete, 0) == ERREUR_SOCKET) {
+        qDebug() << "Erreur d'envoi de la requête Modbus";
         return -1; // Valeur d'erreur
     }
-    unsigned char response[256];
-    int bytesRead = recv(sock, (char*)response, sizeof(response), 0);
-    if (bytesRead == SOCKET_ERROR) {
-        qDebug() << "Erreur de r�ception de la r�ponse Modbus";
+    unsigned char reponse[256];
+    int octetsLus = recv(socket, (char*)reponse, sizeof(reponse), 0);
+    if (octetsLus == ERREUR_SOCKET) {
+        qDebug() << "Erreur de réception de la réponse Modbus";
         return -1; // Valeur d'erreur
     }
 
-    // Afficher la r�ponse Modbus compl�te
-    qDebug() << "R�ponse Modbus (bytes lus:" << bytesRead << "):" << QByteArray((char*)response, bytesRead).toHex();
+    // Afficher la réponse Modbus complète
+    qDebug() << "Réponse Modbus (octets lus:" << octetsLus << "):" << QByteArray((char*)reponse, octetsLus).toHex();
 
-    if (bytesRead >= 9 && !(response[7] & 0x80)) {
-        int numRegisters = bytesRead / 2 - 4; // Calculer le nombre de registres re�us
-        for (int i = 0; i < numRegisters && i < responseTrameSize; ++i) {
-            responseTrame[i] = (response[9 + i * 2] << 8) | response[10 + i * 2];
+    if (octetsLus >= 9 && !(reponse[7] & 0x80)) {
+        int nombreRegistres = octetsLus / 2 - 4; // Calculer le nombre de registres reçus
+        for (int i = 0; i < nombreRegistres && i < tailleTrameReponse; ++i) {
+            trameReponse[i] = (reponse[9 + i * 2] << 8) | reponse[10 + i * 2];
         }
-        return numRegisters;
+        return nombreRegistres;
     } else {
-        qDebug() << "Erreur Modbus ou r�ponse invalide";
+        qDebug() << "Erreur Modbus ou réponse invalide";
         return -1; // Valeur d'erreur
     }
 }
 
-int ModbusCommunicator::readRawModbusResponse(unsigned char* request, int requestSize, unsigned char* responseBuffer, int responseBufferSize) {
-    if (send(sock, (char*)request, requestSize, 0) == SOCKET_ERROR) {
-        qDebug() << "Erreur d'envoi de la requ�te Modbus (raw):" << errno;
+int CommunicateurModbus::lireReponseModbusBrute(unsigned char* requete, int tailleRequete, unsigned char* tamponReponse, int tailleTamponReponse) {
+    if (send(socket, (char*)requete, tailleRequete, 0) == ERREUR_SOCKET) {
+        qDebug() << "Erreur d'envoi de la requête Modbus (brute):" << errno;
         return 0;
     }
-    int bytesRead = recv(sock, (char*)responseBuffer, responseBufferSize, 0);
-    if (bytesRead == SOCKET_ERROR) {
-        qDebug() << "Erreur de r�ception de la r�ponse Modbus (raw):" << errno;
+    int octetsLus = recv(socket, (char*)tamponReponse, tailleTamponReponse, 0);
+    if (octetsLus == ERREUR_SOCKET) {
+        qDebug() << "Erreur de réception de la réponse Modbus (brute):" << errno;
         return 0;
     }
-    return bytesRead;
+    return octetsLus;
 }
 
-bool ModbusCommunicator::isConnected() const {
-    return sock != INVALID_SOCKET;
+bool CommunicateurModbus::estConnecte() const {
+    return socket != SOCKET_INVALIDE;
 }
 
-void ModbusCommunicator::connectToServer() {
-    disconnectFromServer();
+void CommunicateurModbus::connecterAuServeur() {
+    deconnecterDuServeur();
 
-    sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock == INVALID_SOCKET) {
-        qDebug() << "Erreur de cr�ation du socket:" << errno;
+    socket = ::socket(AF_INET, SOCK_STREAM, 0);
+    if (socket == SOCKET_INVALIDE) {
+        qDebug() << "Erreur de création du socket:" << errno;
         return;
     }
 
-    sockaddr_in serverAddr;
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(port);
-    inet_pton(AF_INET, serverIp.toStdString().c_str(), &serverAddr.sin_addr);
+    sockaddr_in adresseServeur;
+    adresseServeur.sin_family = AF_INET;
+    adresseServeur.sin_port = htons(port);
+    inet_pton(AF_INET, ipServeur.toStdString().c_str(), &adresseServeur.sin_addr);
 
-    if (connect(sock, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
+    if (connect(socket, (sockaddr*)&adresseServeur, sizeof(adresseServeur)) == ERREUR_SOCKET) {
         qDebug() << "Erreur de connexion:" << errno;
-        disconnectFromServer();
+        deconnecterDuServeur();
     }
 }
 
-void ModbusCommunicator::disconnectFromServer() {
-    if (sock != INVALID_SOCKET) {
-        close(sock); // Utilisez close() sur Linux
-        sock = INVALID_SOCKET;
+void CommunicateurModbus::fermerConnexion() {
+    deconnecterDuServeur();
+}
+
+void CommunicateurModbus::deconnecterDuServeur() {
+    if (socket != SOCKET_INVALIDE) {
+        close(socket); // Utilisez close() sur Linux
+        socket = SOCKET_INVALIDE;
     }
 }

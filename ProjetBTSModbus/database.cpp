@@ -3,40 +3,40 @@
 #include <QSqlError>
 #include <QDebug>
 
-DatabaseConnector::DatabaseConnector(const QString& hostName, const QString& dbName, const QString& userName, const QString& password, int port)
-    : hostName(hostName), dbName(dbName), userName(userName), password(password), port(port) {
-    if (!connectToDatabase()) {
+ConnecteurBaseDeDonnees::ConnecteurBaseDeDonnees(const QString& nomHote, const QString& nomBaseDeDonnees, const QString& nomUtilisateur, const QString& motDePasse, int port)
+    : nomHote(nomHote), nomBaseDeDonnees(nomBaseDeDonnees), nomUtilisateur(nomUtilisateur), motDePasse(motDePasse), port(port) {
+    if (!seConnecterBaseDeDonnees()) {
         qCritical() << "La connexion à la base de données a échoué lors de l'initialisation. L'application risque de ne pas fonctionner correctement.";
     }
 }
 
-DatabaseConnector::~DatabaseConnector() {
-    if (db.isOpen()) {
-        db.close();
+ConnecteurBaseDeDonnees::~ConnecteurBaseDeDonnees() {
+    if (baseDeDonnees.isOpen()) {
+        baseDeDonnees.close();
         qDebug() << "Connexion à la base de données fermée.";
     }
 }
 
-bool DatabaseConnector::insertData(float totalConsumptionKWh, const QString& dateTimeString, int dispositifId) {
-    if (!db.isOpen()) {
+bool ConnecteurBaseDeDonnees::insererDonnees(float consommationTotaleKWh, const QString& chaineDateHeure, int idDispositif) {
+    if (!baseDeDonnees.isOpen()) {
         qCritical() << "Erreur : Base de données non ouverte. Impossible d'insérer les données.";
         return false;
     }
 
-    QString formattedDateTimeString = formatDateTime(dateTimeString);
+    QString chaineDateHeureFormatee = formaterDateHeure(chaineDateHeure);
 
-    QSqlQuery query(db);
-    if (!query.prepare("INSERT INTO Donnee_Mesurer (Valeur_Mesure, Timestamp, ID_Dispositif_FK) VALUES (:consumption_kwh, :timestamp, :dispositif_id)")) {
-        qCritical() << "Erreur lors de la préparation de la requête d'insertion :" << query.lastError().text();
+    QSqlQuery requete(baseDeDonnees);
+    if (!requete.prepare("INSERT INTO Donnee_Mesurer (Valeur_Mesure, Timestamp, ID_Dispositif_FK) VALUES (:consumption_kwh, :timestamp, :dispositif_id)")) {
+        qCritical() << "Erreur lors de la préparation de la requête d'insertion :" << requete.lastError().text();
         return false;
     }
 
-    query.bindValue(":consumption_kwh", totalConsumptionKWh);
-    query.bindValue(":timestamp", formattedDateTimeString);
-    query.bindValue(":dispositif_id", dispositifId);
+    requete.bindValue(":consumption_kwh", consommationTotaleKWh);
+    requete.bindValue(":timestamp", chaineDateHeureFormatee);
+    requete.bindValue(":dispositif_id", idDispositif);
 
-    if (!query.exec()) {
-        qCritical() << "Erreur lors de l'insertion des données dans la base de données :" << query.lastError().text();
+    if (!requete.exec()) {
+        qCritical() << "Erreur lors de l'insertion des données dans la base de données :" << requete.lastError().text();
         return false;
     } else {
         qDebug() << "Données insérées avec succès dans la base de données";
@@ -44,45 +44,45 @@ bool DatabaseConnector::insertData(float totalConsumptionKWh, const QString& dat
     }
 }
 
-QString DatabaseConnector::getGatewayIpAddress(int dispositifId) {
-    if (!db.isOpen()) {
+QString ConnecteurBaseDeDonnees::obtenirAdresseIpPasserelle(int idDispositif) {
+    if (!baseDeDonnees.isOpen()) {
         qCritical() << "Erreur : Base de données non ouverte. Impossible de récupérer l'adresse IP.";
         return QString();
     }
 
-    // Modification du nom de la table pour correspondre � la casse probable de phpMyAdmin (minuscules)
-    QString queryStr = QString("SELECT Adresse_IP_Passerelle FROM Dispositif_Passerelle WHERE ID_Dispositif_PK = %1").arg(dispositifId);
-    QSqlQuery query(db);
+    // Modification du nom de la table pour correspondre à la casse probable de phpMyAdmin (minuscules)
+    QString requeteStr = QString("SELECT Adresse_IP_Passerelle FROM Dispositif_Passerelle WHERE ID_Dispositif_PK = %1").arg(idDispositif);
+    QSqlQuery requete(baseDeDonnees);
 
-    if (query.exec(queryStr)) {
-        if (query.next()) {
-            return query.value(0).toString();
+    if (requete.exec(requeteStr)) {
+        if (requete.next()) {
+            return requete.value(0).toString();
         } else {
-            qWarning() << "Aucune adresse IP trouvée pour l'ID_Dispositif_PK :" << dispositifId;
+            qWarning() << "Aucune adresse IP trouvée pour l'ID_Dispositif_PK :" << idDispositif;
             return QString();
         }
     } else {
-        qCritical() << "Erreur lors de l'exécution de la requête de récupération d'IP :" << query.lastError().text() << " - Requête: " << queryStr;
+        qCritical() << "Erreur lors de l'exécution de la requête de récupération d'IP :" << requete.lastError().text() << " - Requête: " << requeteStr;
         return QString();
     }
 }
 
-bool DatabaseConnector::connectToDatabase() {
+bool ConnecteurBaseDeDonnees::seConnecterBaseDeDonnees() {
     if (QSqlDatabase::contains("unique_connection_name")) {
         qDebug() << "Utilisation de la connexion existante à la base de données.";
-        db = QSqlDatabase::database("unique_connection_name");
-        return db.isOpen(); // Retourne true si la connexion existante est ouverte
+        baseDeDonnees = QSqlDatabase::database("unique_connection_name");
+        return baseDeDonnees.isOpen(); // Retourne true si la connexion existante est ouverte
     } else {
-        db = QSqlDatabase::addDatabase("QMYSQL", "unique_connection_name");
-        db.setHostName(hostName);
-        db.setDatabaseName(dbName);
-        db.setUserName(userName);
-        db.setPassword(password);
-        db.setPort(port);
+        baseDeDonnees = QSqlDatabase::addDatabase("QMYSQL", "unique_connection_name");
+        baseDeDonnees.setHostName(nomHote);
+        baseDeDonnees.setDatabaseName(nomBaseDeDonnees);
+        baseDeDonnees.setUserName(nomUtilisateur);
+        baseDeDonnees.setPassword(motDePasse);
+        baseDeDonnees.setPort(port);
     }
 
-    if (!db.open()) {
-        qCritical() << "Erreur de connexion à la base de données :" << db.lastError().text();
+    if (!baseDeDonnees.open()) {
+        qCritical() << "Erreur de connexion à la base de données :" << baseDeDonnees.lastError().text();
         return false; // Retourne false en cas d'erreur de connexion
     } else {
         qDebug() << "Connexion à la base de données réussie (via MySQL)";
@@ -90,12 +90,12 @@ bool DatabaseConnector::connectToDatabase() {
     }
 }
 
-QString DatabaseConnector::formatDateTime(const QString& dateTimeString) {
+QString ConnecteurBaseDeDonnees::formaterDateHeure(const QString& chaineDateHeure) {
     return QString("%1-%2-%3 %4:%5:%6")
-    .arg(dateTimeString.mid(6, 4))  // Année
-    .arg(dateTimeString.mid(3, 2))  // Mois
-    .arg(dateTimeString.mid(0, 2))  // Jour
-    .arg(dateTimeString.mid(11, 2)) // Heure
-    .arg(dateTimeString.mid(14, 2)) // Minute
-    .arg(dateTimeString.mid(17, 2)); // Seconde
+    .arg(chaineDateHeure.mid(6, 4))  // Année
+    .arg(chaineDateHeure.mid(3, 2))  // Mois
+    .arg(chaineDateHeure.mid(0, 2))  // Jour
+    .arg(chaineDateHeure.mid(11, 2)) // Heure
+    .arg(chaineDateHeure.mid(14, 2)) // Minute
+    .arg(chaineDateHeure.mid(17, 2)); // Seconde
 }

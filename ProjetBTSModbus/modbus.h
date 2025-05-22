@@ -8,23 +8,23 @@
 #include <QDebug>
 #include <cstdint> // Pour uint16_t
 
-class ModbusCommunicator {
+class CommunicateurModbus {
 public:
-    ModbusCommunicator(const QString& serverIp, int port);
-    int readRawModbusResponse(unsigned char* request, int requestSize, unsigned char* responseBuffer, int responseBufferSize);
-    ~ModbusCommunicator();
+    CommunicateurModbus(const QString& ipServeur, int port);
+    int lireReponseModbusBrute(unsigned char* requete, int tailleRequete, unsigned char* tamponReponse, int tailleTamponReponse);
+    ~CommunicateurModbus();
 
-    uint16_t readModbusRegister(unsigned char* request, int requestSize);
-    uint16_t readModbusRegisters(unsigned char* request, int requestSize, uint16_t* responseTrame, int responseTrameSize);
-    bool isConnected() const;
-    void connectToServer();
-    void disconnectFromServer(); //mettre en prive
+    uint16_t lireRegistreModbus(unsigned char* requete, int tailleRequete);
+    uint16_t lireRegistresModbus(unsigned char* requete, int tailleRequete, uint16_t* trameReponse, int tailleTrameReponse);
+    bool estConnecte() const;
+    void connecterAuServeur();
+    void deconnecterDuServeur();
+
 private:
 
-
-    QString serverIp;
+    QString ipServeur;
     int port;
-    int sock; // Utilisation d'un descripteur de fichier entier pour le socket
+    int socket; // Utilisation d'un descripteur de fichier entier pour le socket
 };
 
 #endif // MODBUS_H

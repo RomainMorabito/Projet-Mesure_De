@@ -1,26 +1,26 @@
-#ifndef DATABASECONNECTOR_H
-#define DATABASECONNECTOR_H
+#ifndef CONNECTEURBASEDEDONNEES_H
+#define CONNECTEURBASEDEDONNEES_H
 
 #include <QSqlDatabase>
 #include <QString>
 
-class DatabaseConnector {
+class ConnecteurBaseDeDonnees {
 public:
-    DatabaseConnector(const QString& hostName, const QString& dbName, const QString& userName, const QString& password, int port);
-    ~DatabaseConnector();
-    bool insertData(float totalConsumptionKWh, const QString& dateTimeString, int dispositifId);
-    QString getGatewayIpAddress(int dispositifId);
+    ConnecteurBaseDeDonnees(const QString& nomHote, const QString& nomBaseDeDonnees, const QString& nomUtilisateur, const QString& motDePasse, int port);
+    ~ConnecteurBaseDeDonnees();
+    bool insererDonnees(float consommationTotaleKWh, const QString& chaineDateHeure, int idDispositif);
+    QString obtenirAdresseIpPasserelle(int idDispositif);
 
 private:
-    QString hostName;
-    QString dbName;
-    QString userName;
-    QString password;
+    QString nomHote;
+    QString nomBaseDeDonnees;
+    QString nomUtilisateur;
+    QString motDePasse;
     int port;
-    QSqlDatabase db;
+    QSqlDatabase baseDeDonnees;
 
-     bool connectToDatabase();
-    QString formatDateTime(const QString& dateTimeString);
+    bool seConnecterBaseDeDonnees();
+    QString formaterDateHeure(const QString& chaineDateHeure);
 };
 
-#endif // DATABASECONNECTOR_H
+#endif // CONNECTEURBASEDEDONNEES_H
