@@ -9,7 +9,7 @@ int main(int argc, char *argv[]) {
     std::locale::global(std::locale(""));
 
     // Connexion à la base de données
-    ConnecteurBaseDeDonnees connecteurBaseDeDonnees("192.168.17.10", "Mesure_De", "admin", "admin", 3306);
+    ConnecteurBaseDeDonnees connecteurBaseDeDonnees("localhost", "Mesure_De", "admin", "admin", 3306);
     float valeurEnergiePrecedenteWh1 = 0.0f;
     float valeurEnergiePrecedenteWh2 = 0.0f;
     float valeurEnergiePrecedenteWh3 = 0.0f;
